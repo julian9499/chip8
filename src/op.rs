@@ -39,8 +39,11 @@ pub enum Op {
 impl Op {
     pub fn decode(opcode: u16) -> Self {
         match opcode & 0xF000 {
-            0x00E0 => Self::CLR,
-            0x00EE => Self::RET,
+            0x0000 => match opcode & 0xFFFF {
+                0x00E0 => Self::CLR,
+                0x00EE => Self::RET,
+                _ => panic!("Invalid opcode: {:04X}", opcode),
+            }
             0x1000 => Self::JP,
             0x2000 => Self::CALL,
             0x3000 => Self::SE,
@@ -48,7 +51,7 @@ impl Op {
             0x5000 => Self::SER,
             0x6000 => Self::LD,
             0x7000 => Self::ADD,
-            0x8000 => decode8(opcode),
+            0x8000 => Self::decode8(opcode),
             0x9000 => Self::SNE,
             0xA000 => Self::LDI,
             0xB000 => Self::JPA,
@@ -59,7 +62,7 @@ impl Op {
                 0x00A1 => Self::SKNP,
                 _ => panic!("Invalid opcode: {:04X}", opcode),
             }, //multiple
-            0xF000 => decode_f(opcode), // multiple
+            0xF000 => Self::decode_f(opcode), // multiple
             _ => panic!("Invalid opcode: {:04X}", opcode),
         }
     }

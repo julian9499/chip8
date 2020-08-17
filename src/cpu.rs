@@ -47,7 +47,7 @@ impl Cpu {
         // Execute the instruction
         match op {
             Op::LD => self.v[x] = kk,
-            Op::ADD => self.v[x] = self.v[x] + kk,
+            // Op::ADD => self.v[x] = self.v[x] + kk,
             Op::LDR => self.v[x] = self.v[y],
             Op::CLR => self.screen.clear_screen(),
             _ => {}
