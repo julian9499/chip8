@@ -3,8 +3,7 @@ use std::io;
 use std::io::Read;
 use crate::memory::Memory;
 use crate::cpu::Cpu;
-use crate::screen::Screen;
-use winit::event_loop::EventLoop;
+use std::{thread, time};
 
 pub struct CHIP8 {
     mem: Memory,
@@ -34,8 +33,106 @@ impl CHIP8 {
     }
 
     pub fn start(&mut self) {
+        let mut ten_millis = time::Duration::from_millis(16);
+        let mut now = time::Instant::now();
+
         loop {
-            self.cpu.cycle(&mut self.mem)
+            if now.elapsed() >= ten_millis {
+                now = time::Instant::now();
+                self.cpu.timer();
+            }
+            self.cpu.cycle(&mut self.mem);
+            thread::sleep(ten_millis);
+
         }
     }
+
+    pub fn load_font(&mut self) -> () {
+        let font: [u8; 80] =
+            [0xF0,
+                0x90,
+                0x90,
+                0x90,
+                0xF0,
+                0x20,
+                0x60,
+                0x20,
+                0x20,
+                0x70,
+                0xF0,
+                0x10,
+                0xF0,
+                0x80,
+                0xF0,
+                0xF0,
+                0x10,
+                0xF0,
+                0x10,
+                0xF0,
+                0x90,
+                0x90,
+                0xF0,
+                0x10,
+                0x10,
+                0xF0,
+                0x80,
+                0xF0,
+                0x10,
+                0xF0,
+                0xF0,
+                0x80,
+                0xF0,
+                0x90,
+                0xF0,
+                0xF0,
+                0x10,
+                0x20,
+                0x40,
+                0x40,
+                0xF0,
+                0x90,
+                0xF0,
+                0x90,
+                0xF0,
+                0xF0,
+                0x90,
+                0xF0,
+                0x10,
+                0xF0,
+                0xF0,
+                0x90,
+                0xF0,
+                0x90,
+                0x90,
+                0xE0,
+                0x90,
+                0xE0,
+                0x90,
+                0xE0,
+                0xF0,
+                0x80,
+                0x80,
+                0x80,
+                0xF0,
+                0xE0,
+                0x90,
+                0x90,
+                0x90,
+                0xE0,
+                0xF0,
+                0x80,
+                0xF0,
+                0x80,
+                0xF0,
+                0xF0,
+                0x80,
+                0xF0,
+                0x80,
+                0x80];
+
+        for i in 0..font.len() {
+            self.mem.set(i, font[i]);
+        }
+    }
+
 }

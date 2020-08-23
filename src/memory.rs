@@ -1,5 +1,3 @@
-
-
 const MEMORY_SIZE: usize = 4096;
 
 pub struct Memory {
@@ -17,8 +15,13 @@ impl Memory {
         self.mem[index] = value;
     }
 
-    pub fn read16(&mut self, counter: usize) -> u16 {
-        let number = ((self.mem[counter] as u16) << 8) | self.mem[counter + 1] as u16;
+    pub fn read16(&mut self, index: usize) -> u16 {
+        let number = ((self.mem[index] as u16) << 8) | self.mem[index + 1] as u16;
+        return number;
+    }
+
+    pub fn read8(&mut self, index: usize) -> u8 {
+        let number = self.mem[index];
         return number;
     }
 }

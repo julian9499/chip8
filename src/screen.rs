@@ -1,4 +1,4 @@
-use pixels::{Pixels, SurfaceTexture};
+use pixels::{Pixels, SurfaceTexture, Error};
 use winit::window::Window;
 use winit::event_loop::EventLoop;
 use winit::dpi::{PhysicalSize, LogicalSize, LogicalPosition};
@@ -23,12 +23,54 @@ impl Screen {
     pub fn clear_screen(&mut self) {
         let frame = self.pixels.get_frame();
         for pixel in frame.chunks_exact_mut(4) {
-            pixel[0] = 0x00; // R
-            pixel[1] = 0x00; // G
-            pixel[2] = 0x00; // B
-            pixel[3] = 0xff; // A
+            Screen::set_pixel(pixel, 0x00);
         }
         self.pixels.render();
+    }
+
+    pub fn draw_sprite(&mut self, sprite: [u8; 15], x: u8, y: u8) -> bool {
+        let mut flag = false;
+        for (index, byte) in sprite.iter().enumerate() {
+            for i in 0..7 {
+                if (byte >> i) & 1 != 0 {
+                    let x_coord: u16 = ((x as u16 + 7 - i) % 64) as u16;
+                    let y_coord: u16 = (((y.wrapping_add(index as u8)) % 32) as u16).wrapping_mul((64 as u16));
+                    let cord = x_coord + y_coord;
+                    let frame = self.pixels.get_frame().chunks_exact_mut(4);
+                    for (j, pixel) in frame.enumerate() {
+                        if j == cord as usize {
+                            if Screen::is_pixel_white(pixel) {
+                                Screen::set_pixel(pixel, 0x00);
+                                flag = true;
+                            } else {
+                                Screen::set_pixel(pixel, 0xFF);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        self.pixels.render();
+        return flag;
+    }
+
+    pub fn is_pixel_white(pixel: &mut [u8]) -> bool {
+        return if pixel[0] > 0 {
+            true
+        } else {
+            false
+        };
+    }
+
+    pub fn set_pixel(pixel: &mut [u8], color: u8) -> () {
+        pixel[0] = color; // R
+        pixel[1] = color; // G
+        pixel[2] = color; // B
+        pixel[3] = 0xff; // A
+    }
+
+    pub fn render(&mut self) -> Result<(), Error> {
+        self.pixels.render()
     }
 }
 

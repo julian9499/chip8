@@ -2,9 +2,9 @@ pub enum Op {
     CLR,    // Clear the screen
     RET,    // The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
     JP,     // The interpreter sets the program counter to nnn.
-    CALL,   // 2nnn - CALL addr
-    SE,     // 3xkk - SE Vx, byte
-    SNE,    // 4xkk - SNE Vx, byte
+    CALL,   // 2nnn - The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
+    SE,     // 3xkk - The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
+    SNE,    // 4xkk - The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
     SER,    // 5xy0 - SE Vx, Vy
     LD,     // 6xkk - LD Vx, byte
     ADD,    // 7xkk - ADD Vx, byte
@@ -14,7 +14,7 @@ pub enum Op {
     XOR,    // 8xy3 - XOR Vx, Vy
     ADDR,   // 8xy4 - ADD Vx, Vy
     SUB,    // 8xy5 - SUB Vx, Vy
-    SHR,    // 8xy6 - SHR Vx {, Vy}
+    SHR,    // 8xy6 - If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
     SUBN,   // 8xy7 - SUBN Vx, Vy
     SHL,    // 8xyE - SHL Vx {, Vy}
     SNER,   // 9xy0 - SNE Vx, Vy
@@ -107,5 +107,13 @@ impl Op {
 
     pub fn kk(opcode: u16) -> u8 {
         (opcode & 0x00FF) as u8
+    }
+
+    pub fn nnn(opcode: u16) -> u16 {
+        (opcode & 0x0FFF) as u16
+    }
+
+    pub fn nibble(opcode: u16) -> usize {
+        (opcode & 0x000F) as usize
     }
 }

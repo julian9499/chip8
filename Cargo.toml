@@ -8,3 +8,5 @@ edition = "2018"
 [dependencies]
 pixels = "0.1.0"
 winit = "0.22.0"
+rand = "0.7.3"
+device_query = "0.1.0"
