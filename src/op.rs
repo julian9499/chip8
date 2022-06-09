@@ -52,7 +52,7 @@ impl Op {
             0x6000 => Self::LD,
             0x7000 => Self::ADD,
             0x8000 => Self::decode8(opcode),
-            0x9000 => Self::SNE,
+            0x9000 => Self::SNER,
             0xA000 => Self::LDI,
             0xB000 => Self::JPA,
             0xC000 => Self::RND,

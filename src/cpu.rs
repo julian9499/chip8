@@ -1,11 +1,10 @@
 use crate::op::Op;
 use crate::memory::Memory;
-use crate::screen::Screen;
 use winit::event_loop::{EventLoop, ControlFlow};
 use rand::Rng;
 use winit::event::Event;
 use device_query::{DeviceQuery, DeviceState, Keycode};
-
+use winit::platform::unix::x11::Window;
 
 pub struct Cpu {
     stack: [u16; 16],
@@ -21,16 +20,13 @@ pub struct Cpu {
     // delay timer
     st: u8,
     // sound timer
-    screen: Screen,
-    event_loop: EventLoop<()>,
+    framebuffer: [bool; 2048],
     seed: rand::rngs::ThreadRng,
     device_state: DeviceState,
 }
 
 impl Cpu {
     pub fn new() -> Self {
-        let event_loop = EventLoop::new();
-        let mut screen = Screen::new("chip 8", &event_loop);
         Self {
             stack: [0; 16], // the stack
             v: [0; 16], // the V registers
@@ -39,8 +35,7 @@ impl Cpu {
             sp: 0,      // the stack pointer
             dt: 0,      // delay timer
             st: 0,      // sound timer
-            screen,
-            event_loop,
+            framebuffer: [false; 2048],
             seed: rand::thread_rng(),
             device_state: DeviceState::new(),
         }
@@ -74,7 +69,7 @@ impl Cpu {
 
         // Execute the instruction
         match op {
-            Op::CLR => self.screen.clear_screen(),
+            Op::CLR => self.clear_screen(),
             Op::RET => {
                 self.pc = self.stack[self.sp];
                 self.sp = self.sp - 1
@@ -145,7 +140,7 @@ impl Cpu {
 
             Op::DRW => {
                 let sprite = self.read_sprite(self.i, nibble, memory);
-                self.screen.draw_sprite(sprite, self.v[x], self.v[y]);
+                self.draw_sprite(sprite, self.v[x], self.v[y]);
             }
             Op::SKP => {
                 if keys.contains(&(self.v[x] as u8)) {
@@ -180,21 +175,65 @@ impl Cpu {
             }
             Op::LDB => {
                 memory.set(self.i as usize, self.v[x] / 100);
-                memory.set((self.i + 1) as usize, (self.v[x] % 100) / 100);
+                memory.set((self.i + 1) as usize, (self.v[x] % 100) / 10);
                 memory.set((self.i + 2) as usize, self.v[x] % 10)
             }
             Op::LDII => {
-                let mut index = self.i.clone();
-                for v in self.v.iter() {
-                    memory.set(index as usize, *v);
-                    index += 1;
+                for (register_index,v) in self.v.iter().enumerate() {
+                    if register_index > x {
+                        break;
+                    }
+                    memory.set(self.i as usize + register_index, *v);
                 }
             }
             Op::LDVX => {
-                for index in 0..15 {
-                    self.v[index] = memory.read8(self.i as usize + index);
+                for (index, register) in self.v.iter_mut().enumerate() {
+                    if index > x {
+                        break;
+                    }
+                    *register = memory.read8(index + self.i as usize);
                 }
             }
+        }
+    }
+
+    pub fn draw (&self, frame: &mut [u8]) {
+        for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
+            if self.framebuffer[i] {
+                pixel.copy_from_slice(&[0xFF,0xFF,0xFF,0xFF]);
+            } else {
+                pixel.copy_from_slice(&[0x00,0x00,0x00,0xFF]);
+            }
+        }
+    }
+
+    fn draw_sprite(&mut self, sprite: [u8; 15], x: u8, y: u8) -> bool {
+        let mut flag = false;
+        for (index, byte) in sprite.iter().enumerate() {
+            for i in 0..8 {
+                if (*byte >> i) & 1 != 0 {
+                    let x_coord: u16 = ((x as u16 + 7 - i) % 64) as u16;
+                    let y_coord: u16 = (((y.wrapping_add(index as u8)) % 32) as u16).wrapping_mul((64 as u16));
+                    let cord = x_coord + y_coord;
+                    for (j, pixel) in self.framebuffer.iter_mut().enumerate() {
+                        if j == cord as usize {
+                            if *pixel {
+                                *pixel = false;
+                                flag = true;
+                            } else {
+                                *pixel = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return flag;
+    }
+
+    fn clear_screen(&mut self) {
+        for (i, pixel) in self.framebuffer.iter_mut().enumerate() {
+            *pixel = false;
         }
     }
 
