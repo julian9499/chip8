@@ -1,3 +1,5 @@
+use cpal::Stream;
+use cpal::traits::StreamTrait;
 use crate::op::Op;
 use crate::memory::Memory;
 use winit::event_loop::{EventLoop, ControlFlow};
@@ -5,6 +7,7 @@ use rand::Rng;
 use winit::event::Event;
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use winit::platform::unix::x11::Window;
+use crate::audio;
 
 pub struct Cpu {
     stack: [u16; 16],
@@ -23,6 +26,7 @@ pub struct Cpu {
     framebuffer: [bool; 2048],
     seed: rand::rngs::ThreadRng,
     device_state: DeviceState,
+    stream: Stream,
 }
 
 impl Cpu {
@@ -38,6 +42,7 @@ impl Cpu {
             framebuffer: [false; 2048],
             seed: rand::thread_rng(),
             device_state: DeviceState::new(),
+            stream: audio::Opt::new().beep(),
         }
     }
 
@@ -49,6 +54,12 @@ impl Cpu {
 
         // Increment the program counter
         self.pc += 2;
+
+        if self.st == 0 {
+            self.stream.pause();
+        } else {
+            self.stream.play();
+        }
 
         // Get current pressed keys
         let keys: Vec<u8> = self.device_state.get_keys()
